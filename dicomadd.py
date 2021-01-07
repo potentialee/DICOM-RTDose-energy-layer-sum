@@ -15,7 +15,7 @@ import numpy as np
 from pydicom import dcmread
 from pydicom.dataset import FileDataset, FileMetaDataset
 
-# for file systems and error handling
+# file systems and error handling
 import os
 import sys
 
@@ -73,13 +73,16 @@ else :
 ## 1. integrating pixel data from each energy layer files ##
 
 RTdose_EnergyLayer_1 = globals()['RTDose_part_1']
-RTdose_EnergyLayer_1.x_axis = np.arange(RTdose_EnergyLayer_1.Columns) * RTdose_EnergyLayer_1.PixelSpacing[0] + RTdose_EnergyLayer_1.ImagePositionPatient[0]
-RTdose_EnergyLayer_1.y_axis = np.arange(RTdose_EnergyLayer_1.Rows) * RTdose_EnergyLayer_1.PixelSpacing[1] + RTdose_EnergyLayer_1.ImagePositionPatient[1]
-RTdose_EnergyLayer_1.z_axis = np.array(RTdose_EnergyLayer_1.GridFrameOffsetVector) + RTdose_EnergyLayer_1.ImagePositionPatient[2]
-RTdose_EnergyLayer_pixel_array = RTdose_EnergyLayer_1.pixel_array * RTdose_EnergyLayer_1.DoseGridScaling
+
+# caculate axis for interpolation (not using because all dose grids' are same)
+#RTdose_EnergyLayer_1.x_axis = np.arange(RTdose_EnergyLayer_1.Columns) * RTdose_EnergyLayer_1.PixelSpacing[0] + RTdose_EnergyLayer_1.ImagePositionPatient[0]
+#RTdose_EnergyLayer_1.y_axis = np.arange(RTdose_EnergyLayer_1.Rows) * RTdose_EnergyLayer_1.PixelSpacing[1] + RTdose_EnergyLayer_1.ImagePositionPatient[1]
+#RTdose_EnergyLayer_1.z_axis = np.array(RTdose_EnergyLayer_1.GridFrameOffsetVector) + RTdose_EnergyLayer_1.ImagePositionPatient[2]
+
+RTdose_EnergyLayer_1_pixel_array = RTdose_EnergyLayer_1.pixel_array * RTdose_EnergyLayer_1.DoseGridScaling
 
 # dose grid sum standard is first dose grid data
-start_dose_grid = np.swapaxes(RTdose_EnergyLayer_pixel_array, 0, 2)
+start_dose_grid = np.swapaxes(RTdose_EnergyLayer_1_pixel_array, 0, 2)
 
 # Add global variable 
 for variable in list(globals()) :
@@ -87,9 +90,10 @@ for variable in list(globals()) :
         RTdose_temp = globals()[variable]
         # Check the file is RT-Dose file
         if RTdose_temp.Modality == 'RTDOSE' :
-            RTdose_temp.x_axis = np.arange(RTdose_temp.Columns) * RTdose_temp.PixelSpacing[0] + RTdose_temp.ImagePositionPatient[0]
-            RTdose_temp.y_axis = np.arange(RTdose_temp.Rows) * RTdose_temp.PixelSpacing[1] + RTdose_temp.ImagePositionPatient[1]
-            RTdose_temp.z_axis = np.array(RTdose_temp.GridFrameOffsetVector) + RTdose_temp.ImagePositionPatient[2]
+            # caculate axis for interpolation (not using because all dose grids' are same)
+            #RTdose_temp.x_axis = np.arange(RTdose_temp.Columns) * RTdose_temp.PixelSpacing[0] + RTdose_temp.ImagePositionPatient[0]
+            #RTdose_temp.y_axis = np.arange(RTdose_temp.Rows) * RTdose_temp.PixelSpacing[1] + RTdose_temp.ImagePositionPatient[1]
+            #RTdose_temp.z_axis = np.array(RTdose_temp.GridFrameOffsetVector) + RTdose_temp.ImagePositionPatient[2]
             pixel_array_temp = RTdose_temp.pixel_array * RTdose_temp.DoseGridScaling
             dose_grid_temp = np.swapaxes(pixel_array_temp, 0, 2)
             # Direct sum becuase all file is same
@@ -101,9 +105,9 @@ for variable in list(globals()) :
         
 
 # Convert to RT dose pixel data
-DoseGridScalingFactor = np.max(start_dose_grid) / np.iinfo(np.uint16).max
+DoseGridScalingFactor = np.max(start_dose_grid) / np.iinfo(np.uint32).max
 pixelData_temp = np.swapaxes(start_dose_grid, 0, 2) / DoseGridScalingFactor
-pixelDataSum = np.uint16(pixelData_temp).tobytes()
+pixelDataSum = np.uint32(pixelData_temp).tobytes()
 
 ## 2. Writing integrated file's meta data and make file ##
 
@@ -117,9 +121,11 @@ file_meta = FileMetaDataset()
 
 # This means 'RT Dose Storage' in DICOM
 file_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+
 # UID generated with randomly
 # none prefix => pydicom.uid.generate_uid(prefix=None)
 file_meta.MediaStorageSOPInstanceUID = pydicom.uid.generate_uid()
+
 # This means 'Implicit VR little endian'
 file_meta.TransferSyntaxUID = '1.2.840.10008.1.2'
 file_meta.ImplementationClassUID = pydicom.uid.generate_uid()
@@ -188,9 +194,12 @@ ds.FrameIncrementPointer = RTdose_EnergyLayer_1.FrameIncrementPointer
 ds.Rows = RTdose_EnergyLayer_1.Rows
 ds.Columns = RTdose_EnergyLayer_1.Columns
 ds.PixelSpacing = RTdose_EnergyLayer_1.PixelSpacing
-ds.BitsAllocated = RTdose_EnergyLayer_1.BitsAllocated
-ds.BitsStored = RTdose_EnergyLayer_1.BitsStored
-ds.HighBit = RTdose_EnergyLayer_1.HighBit
+#ds.BitsAllocated = RTdose_EnergyLayer_1.BitsAllocated
+#ds.BitsStored = RTdose_EnergyLayer_1.BitsStored
+#ds.HighBit = RTdose_EnergyLayer_1.HighBit
+ds.BitsAllocated = 32
+ds.BitsStored = 32
+ds.HighBit = 31
 ds.PixelRepresentation = RTdose_EnergyLayer_1.PixelRepresentation
 ds.GridFrameOffsetVector = RTdose_EnergyLayer_1.GridFrameOffsetVector
 ds.DoseUnits = 'GY'
