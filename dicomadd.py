@@ -73,8 +73,8 @@ else :
 ## 1. integrating pixel data from each energy layer files ##
 
 RTdose_EnergyLayer_1 = globals()['RTDose_part_1']
-RTdose_EnergyLayer_1.x_axis = np.arange(RTdose_EnergyLayer_1.Columns) * RTdose_EnergyLayer_1.PixelSpacing[0]
-RTdose_EnergyLayer_1.y_axis = np.arange(RTdose_EnergyLayer_1.Rows) * RTdose_EnergyLayer_1.PixelSpacing[1]
+RTdose_EnergyLayer_1.x_axis = np.arange(RTdose_EnergyLayer_1.Columns) * RTdose_EnergyLayer_1.PixelSpacing[0] + RTdose_EnergyLayer_1.ImagePositionPatient[0]
+RTdose_EnergyLayer_1.y_axis = np.arange(RTdose_EnergyLayer_1.Rows) * RTdose_EnergyLayer_1.PixelSpacing[1] + RTdose_EnergyLayer_1.ImagePositionPatient[1]
 RTdose_EnergyLayer_1.z_axis = np.array(RTdose_EnergyLayer_1.GridFrameOffsetVector) + RTdose_EnergyLayer_1.ImagePositionPatient[2]
 RTdose_EnergyLayer_pixel_array = RTdose_EnergyLayer_1.pixel_array * RTdose_EnergyLayer_1.DoseGridScaling
 
@@ -87,8 +87,8 @@ for variable in list(globals()) :
         RTdose_temp = globals()[variable]
         # Check the file is RT-Dose file
         if RTdose_temp.Modality == 'RTDOSE' :
-            RTdose_temp.x_axis = np.arange(RTdose_temp.Columns) * RTdose_temp.PixelSpacing[0]
-            RTdose_temp.y_axis = np.arange(RTdose_temp.Rows) * RTdose_temp.PixelSpacing[1]
+            RTdose_temp.x_axis = np.arange(RTdose_temp.Columns) * RTdose_temp.PixelSpacing[0] + RTdose_temp.ImagePositionPatient[0]
+            RTdose_temp.y_axis = np.arange(RTdose_temp.Rows) * RTdose_temp.PixelSpacing[1] + RTdose_temp.ImagePositionPatient[1]
             RTdose_temp.z_axis = np.array(RTdose_temp.GridFrameOffsetVector) + RTdose_temp.ImagePositionPatient[2]
             pixel_array_temp = RTdose_temp.pixel_array * RTdose_temp.DoseGridScaling
             dose_grid_temp = np.swapaxes(pixel_array_temp, 0, 2)
@@ -195,7 +195,7 @@ ds.PixelRepresentation = RTdose_EnergyLayer_1.PixelRepresentation
 ds.GridFrameOffsetVector = RTdose_EnergyLayer_1.GridFrameOffsetVector
 ds.DoseUnits = 'GY'
 ds.DoseType = 'PHYSICAL'
-ds.DoseSummationType = 'BEAM'
+ds.DoseSummationType = 'PORT'
 
 # Integrated Pixel Data and scaling factor
 ds.DoseGridScaling = DoseGridScalingFactor
